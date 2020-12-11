@@ -7,8 +7,10 @@
 			</view>
 			<!-- 主体表单 -->
 			<view class="main">
-				<wInput v-model="phoneData" type="text" maxlength="11" placeholder="用户名/电话" :focus="isFocus"></wInput>
-				<wInput v-model="passData" type="password" maxlength="11" placeholder="密码"></wInput>
+				<wInput v-model="phoneData" type="text" maxlength="11" placeholder="邮箱/电话" :focus="isFocus"></wInput>
+				<wInput v-model="verCode" type="number" maxlength="4" placeholder="验证码" isShowCode ref="runCode" @setCode="getVerCode()"
+				 v-if='isverCode'></wInput>
+				<wInput v-model="passData" type="password" maxlength="18" placeholder="密码" v-else></wInput>
 			</view>
 			<wButton class="wbutton" text="登 录" :rotate="isRotate" @click="startLogin"></wButton>
 
@@ -27,9 +29,11 @@
 
 			<!-- 底部信息 -->
 			<view class="footer">
-				<navigator url="forget" open-type="navigate">找回密码</navigator>
+				<text @click="isverCodeLogin" style="font-size: 13px; margin: 0;">{{cutLogin}}</text>
 				<text>|</text>
-				<navigator url="register" open-type="navigate">注册账号</navigator>
+				<navigator url="forget" open-type="navigate" hover-class="none">找回密码</navigator>
+				<text>|</text>
+				<navigator url="register" open-type="navigate" hover-class="none">注册账号</navigator>
 			</view>
 		</view>
 	</view>
@@ -48,7 +52,10 @@
 				phoneData: '', //用户/电话
 				passData: '', //密码
 				isRotate: false, //是否加载旋转
-				isFocus: true // 是否聚焦
+				isFocus: true, //是否聚焦
+				verCode: '', //验证码
+				isverCode: true, //判断是否验证码登录界面
+				cutLogin: '密码登录'
 			};
 		},
 		components: {
@@ -76,6 +83,14 @@
 				// 	// error
 				// }
 			},
+			isverCodeLogin() {
+				this.isverCode = !this.isverCode
+				if (this.cutLogin == '密码登录') {
+					this.cutLogin = '验证码登录'
+				} else {
+					this.cutLogin = '密码登录'
+				}
+			},
 			startLogin(e) {
 				console.log(e)
 				//登录
@@ -83,23 +98,57 @@
 					//判断是否加载中，避免重复点击请求
 					return false;
 				}
-				if (this.phoneData.length == "") {
-					uni.showToast({
-						icon: 'none',
-						position: 'bottom',
-						title: '用户名不能为空'
-					});
-					return;
+				
+				if(this.isverCode){
+					uni.request({
+						url: 'http://192.168.0.17:3000/captcha/sent',
+						data: {
+							phone: _this.phoneData,
+							captcha: _this.verCode
+						},
+						success(res) {
+							console.log(res.data.code)
+							if (res.data.code == 200) {
+								uni.showToast({
+									icon: 'none',
+									position: 'bottom',
+									title: '登录成功'
+								})
+							} else {
+								uni.showToast({
+									icon: 'none',
+									position: 'bottom',
+									title: res.data.msg
+								});
+							}
+						}
+					})
+				}else{
+					uni.request({
+						url: 'http://192.168.0.17:3000/login/cellphone',
+						data: {
+							phone: _this.phoneData,
+							password: _this.passData
+						},
+						success(res) {
+							console.log(res.data.code)
+							if (res.data.code == 200) {
+								uni.showToast({
+									icon: 'none',
+									position: 'bottom',
+									title: '登录成功'
+								})
+							} else {
+								uni.showToast({
+									icon: 'none',
+									position: 'bottom',
+									title: res.data.msg
+								});
+							}
+						}
+					})
 				}
-				if (this.passData.length < 5) {
-					uni.showToast({
-						icon: 'none',
-						position: 'bottom',
-						title: '密码不正确'
-					});
-					return;
-				}
-
+				
 				console.log("登录成功")
 
 				_this.isRotate = true
@@ -170,6 +219,42 @@
 					position: 'bottom',
 					title: '...'
 				});
+			},
+			getVerCode() {
+				//获取验证码
+				if (_this.phoneData.length != 11) {
+					uni.showToast({
+						icon: 'none',
+						position: 'bottom',
+						title: '手机号不正确'
+					});
+					return false;
+				}
+				console.log("获取验证码")
+				this.$refs.runCode.$emit('runCode'); //触发倒计时（一般用于请求成功验证码后调用）
+				uni.showToast({
+					icon: 'none',
+					position: 'bottom',
+					title: '模拟倒计时触发'
+				});
+
+				setTimeout(function() {
+					_this.$refs.runCode.$emit('runCode', 0); //假装模拟下需要 终止倒计时
+					uni.showToast({
+						icon: 'none',
+						position: 'bottom',
+						title: '模拟倒计时终止'
+					});
+				}, 60000)
+				uni.request({
+					url: 'http://192.168.0.17:3000/captcha/sent',
+					data: {
+						phone: _this.phoneData
+					},
+					success(res) {
+						console.log(res)
+					}
+				})
 			}
 		}
 	}
