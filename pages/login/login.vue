@@ -7,7 +7,7 @@
 			</view>
 			<!-- 主体表单 -->
 			<view class="main">
-				<wInput v-model="phoneData" type="text" maxlength="11" placeholder="邮箱/电话" :focus="isFocus"></wInput>
+				<wInput v-model="phoneData" type="text" maxlength="11" placeholder="电话" :focus="isFocus"></wInput>
 				<wInput v-model="verCode" type="number" maxlength="4" placeholder="验证码" isShowCode ref="runCode" @setCode="getVerCode()"
 				 v-if='isverCode'></wInput>
 				<wInput v-model="passData" type="password" maxlength="18" placeholder="密码" v-else></wInput>
@@ -55,7 +55,8 @@
 				isFocus: true, //是否聚焦
 				verCode: '', //验证码
 				isverCode: true, //判断是否验证码登录界面
-				cutLogin: '密码登录'
+				cutLogin: '密码登录',
+				cookie: ''
 			};
 		},
 		components: {
@@ -63,27 +64,23 @@
 			wButton,
 		},
 		mounted() {
-			_this = this;
-			//this.isLogin();
+			_this = this
+			this.isLogin();
 		},
 		methods: {
 			isLogin() {
 				//判断缓存中是否登录过，直接登录
-				// try {
-				// 	const value = uni.getStorageSync('setUserData');
-				// 	if (value) {
-				// 		//有登录信息
-				// 		console.log("已登录用户：",value);
-				// 		_this.$store.dispatch("setUserData",value); //存入状态
-				// 		uni.reLaunch({
-				// 			url: '../../../pages/index',
-				// 		});
-				// 	}
-				// } catch (e) {
-				// 	// error
-				// }
+				this.cookie = uni.getStorageSync('setUserData');
+				if (this.cookie != '') {
+					//有登录信息
+					uni.redirectTo({
+						url: '../index/index'
+					});
+				}
 			},
 			isverCodeLogin() {
+				this.passData = ''
+				this.verCode = ''
 				this.isverCode = !this.isverCode
 				if (this.cutLogin == '密码登录') {
 					this.cutLogin = '验证码登录'
@@ -91,39 +88,36 @@
 					this.cutLogin = '密码登录'
 				}
 			},
-			startLogin(e) {
-				console.log(e)
-				//登录
-				if (this.isRotate) {
-					//判断是否加载中，避免重复点击请求
-					return false;
-				}
-				
-				if(this.isverCode){
+			loginHandel() {
+				if (this.isverCode) {
 					uni.request({
-						url: 'http://192.168.0.17:3000/captcha/sent',
+						url: 'http://192.168.0.17:3000/captcha/verify',
 						data: {
 							phone: _this.phoneData,
 							captcha: _this.verCode
 						},
 						success(res) {
-							console.log(res.data.code)
 							if (res.data.code == 200) {
 								uni.showToast({
 									icon: 'none',
 									position: 'bottom',
 									title: '登录成功'
 								})
+								uni.setStorageSync('setUserData', res.data.cookie);
+								uni.reLaunch({
+									url: '../index/index'
+								})
 							} else {
+								console.log(res)
 								uni.showToast({
 									icon: 'none',
 									position: 'bottom',
-									title: res.data.msg
+									title: res.data.message
 								});
 							}
 						}
 					})
-				}else{
+				} else {
 					uni.request({
 						url: 'http://192.168.0.17:3000/login/cellphone',
 						data: {
@@ -131,12 +125,16 @@
 							password: _this.passData
 						},
 						success(res) {
-							console.log(res.data.code)
 							if (res.data.code == 200) {
+								console.log(res)
 								uni.showToast({
 									icon: 'none',
 									position: 'bottom',
 									title: '登录成功'
+								})
+								uni.setStorageSync('setUserData', res.data.cookie);
+								uni.reLaunch({
+									url: '../index/index'
 								})
 							} else {
 								uni.showToast({
@@ -148,69 +146,47 @@
 						}
 					})
 				}
-				
-				console.log("登录成功")
-
+			},
+			startLogin(e) {
+				//登录
+				if (_this.phoneData.length != 11) {
+					uni.showToast({
+						icon: 'none',
+						position: 'bottom',
+						title: '手机号不正确'
+					});
+					return false;
+				}
+				if (this.isRotate) {
+					//判断是否加载中，避免重复点击请求
+					return false;
+				}
+				console.log(this.loginHandel())
 				_this.isRotate = true
 				setTimeout(function() {
 					_this.isRotate = false
 				}, 3000)
-				// uni.showLoading({
-				// 	title: '登录中'
-				// });
-				// getLogin()
-				// .then(res => {
-				// 	//console.log(res)
-				// 	//简单验证下登录（不安全）
-				// 	if(_this.phoneData==res.data.username && _this.passData==res.data.password){
-				// 		let userdata={
-				// 			"username":res.data.username,
-				// 			"nickname":res.data.nickname,
-				// 			"accesstoken":res.data.accesstoken,
-				// 		} //保存用户信息和accesstoken
-				// 		_this.$store.dispatch("setUserData",userdata); //存入状态
-				// 		try {
-				// 			uni.setStorageSync('setUserData', userdata); //存入缓存
-				// 		} catch (e) {
-				// 			// error
-				// 		}
-				// 		uni.showToast({
-				// 			icon: 'success',
-				// 			position: 'bottom',
-				// 			title: '登录成功'
-				// 		});
-				// 		uni.reLaunch({
-				// 			url: '../../../pages/index',
-				// 		});
-				// 	}else{
-				// 		_this.passData=""
-				// 		uni.showToast({
-				// 			icon: 'error',
-				// 			position: 'bottom',
-				// 			title: '账号或密码错误，账号admin密码admin'
-				// 		});
-				// 	}
-				// 	uni.hideLoading();
-				// }).catch(err => {
-				// 	uni.hideLoading();
-				// })
-
 			},
 			login_weixin() {
 				//微信登录
-				uni.showToast({
-					icon: 'none',
-					position: 'bottom',
-					title: '...'
-				});
+				uni.request({
+					url: 'http://192.168.0.17:3000/login/status',
+					data: {
+						cookie: "__csrf=0c2bfe2d72821234d35b1e0e3cb81f49; Max-Age=1296010; Expires=Tue, 29 Dec 2020 05:40:38 GMT; Path=/;;MUSIC_U=d16d24ac56493f2e79b5b8a8b08c3a5ca47a995ce68849d18580d5af286958420931c3a9fbfe3df2; Max-Age=1296000; Expires=Tue, 29 Dec 2020 05:40:28 GMT; Path=/;;NMTID=00OfjiB6VyUGs1P-kdvkowY7p3qI1MAAAF2X8Owwg; Max-Age=315360000; Expires=Thu, 12 Dec 2030 05:40:28 GMT; Path=/;;__remember_me=true; Max-Age=1296000; Expires=Tue, 29 Dec 2020 05:40:28 GMT; Path=/;"
+					},
+					success(res) {
+						console.log(res)
+					}
+				})
 			},
 			login_weibo() {
 				//微博登录
-				uni.showToast({
-					icon: 'none',
-					position: 'bottom',
-					title: '...'
-				});
+				uni.request({
+					url: 'http://192.168.0.17:3000/login/refresh',
+					success(res) {
+						console.log(res)
+					}
+				})
 			},
 			login_github() {
 				//github登录
@@ -230,31 +206,10 @@
 					});
 					return false;
 				}
-				console.log("获取验证码")
 				this.$refs.runCode.$emit('runCode'); //触发倒计时（一般用于请求成功验证码后调用）
-				uni.showToast({
-					icon: 'none',
-					position: 'bottom',
-					title: '模拟倒计时触发'
-				});
-
 				setTimeout(function() {
 					_this.$refs.runCode.$emit('runCode', 0); //假装模拟下需要 终止倒计时
-					uni.showToast({
-						icon: 'none',
-						position: 'bottom',
-						title: '模拟倒计时终止'
-					});
 				}, 60000)
-				uni.request({
-					url: 'http://192.168.0.17:3000/captcha/sent',
-					data: {
-						phone: _this.phoneData
-					},
-					success(res) {
-						console.log(res)
-					}
-				})
 			}
 		}
 	}

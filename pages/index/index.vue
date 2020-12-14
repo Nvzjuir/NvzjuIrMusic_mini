@@ -1,6 +1,22 @@
 <template>
-	<view class="content">
-		<button @click="handletest">获取</button>
+	<view>
+		<uni-nav-bar left-icon="bars" title="首页" @clickLeft="test"></uni-nav-bar>
+		<uni-drawer ref="draw">
+			<view style="padding:30rpx; ">
+				<view>
+					<text class="cu-avatar round margin-left bg-red">B</text>
+					<text class="padding-letf">立即登录</text>
+				</view>
+				<view class="cu-list menu sm-border card-menu margin-top">
+					<!-- <view class="cu-item arrow">
+						<view class="content">
+							<text class="cuIcon-circlefill text-grey"></text>
+							<text class="text-grey">图标 + 标题</text>
+						</view>
+					</view> -->
+				</view>
+			</view>
+		</uni-drawer>
 	</view>
 </template>
 
@@ -10,31 +26,12 @@
 			return {}
 		},
 		methods: {
-			handletest() {
-				console.log("ssss")
-				uni.request({
-					url:'http://192.168.0.17:3000/cellphone/existence/check',
-					data:{
-						phone:18774222422
-					},
-					method:'GET',
-					success(res) {
-						console.log(res)
-					},
-					fail(err) {
-						console.log(err)
-					}
-				})
+			test() {
+				this.$refs.draw.open()
 			}
 		}
 	}
 </script>
 
 <style>
-	.content {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-	}
 </style>

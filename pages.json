@@ -15,12 +15,35 @@
 			"style": {
 				"navigationBarTitleText": "注册账号"
 			}
+		},{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页"
+			}
+		},{
+			"path": "pages/me/me",
+			"style": {
+				"navigationBarTitleText": "我的"
+			}
 		}
 	],
+	"tabBar":{
+		"color":"#000000",
+		"selectedColor":"#007AFF",
+		"backgroundColor":"#F8F8F8",
+		"list":[{
+			"pagePath":"pages/index/index",
+			"text":"首页"
+		},{
+			"pagePath":"pages/me/me",
+			"text":"我的"
+		}]
+	},
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "uni-app",
 		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8"
+		"backgroundColor": "#F8F8F8",
+		"navigationStyle": "custom"
 	}
 }
